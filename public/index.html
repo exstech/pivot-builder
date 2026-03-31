@@ -243,13 +243,15 @@
 
   <!-- HISTORY -->
   <div class="pane" id="p-history">
-    <div id="histList"><p class="empty-state">No pivots generated yet this session.</p></div>
+    <div id="histList"><p class="empty-state">No pivots saved yet.</p></div>
   </div>
 </div>
 
 <script>
 var selKey = null;
 var hist = [];
+try { var _h = localStorage.getItem('pivot_hist'); if (_h) hist = JSON.parse(_h); } catch(e) {}
+renderHist();
 
 var GAPS = {
   calendly_far: 'Calendly allows bookings too far in advance (7-14+ days out) — this is the main driver of no-shows. Interested leads book and then cool off long before the call date arrives.',
@@ -384,6 +386,7 @@ async function genPivot() {
     }).join('');
     document.getElementById('genOut').classList.add('on');
     hist.unshift({ time: new Date().toLocaleTimeString(), handle: handle||'unknown', gap: custom||(selKey||''), pivot: p.pivot });
+    try { localStorage.setItem('pivot_hist', JSON.stringify(hist.slice(0,100))); } catch(e) {}
     renderHist();
   } catch(e) { showE('genEr', e.message); }
   finally { ld('genBtn','genSp',false); }
@@ -414,14 +417,26 @@ async function idGap() {
 
 function renderHist() {
   var el = document.getElementById('histList');
-  if (!hist.length) { el.innerHTML = '<p class="empty-state">No pivots generated yet this session.</p>'; return; }
-  el.innerHTML = hist.map(function(h,i){
-    return '<div class="hi-item">' +
-      '<div class="hi-meta">'+h.time+' &middot; '+h.handle+' &middot; '+h.gap+'</div>' +
-      '<div class="hi-text" id="h'+i+'">'+h.pivot+'</div>' +
-      '<button class="hi-copy" onclick="cp(\'h'+i+'\',this)">Copy</button>' +
-      '</div>';
-  }).join('');
+  if (!hist.length) { el.innerHTML = '<p class="empty-state">No pivots saved yet.</p>'; return; }
+  el.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+      '<span style="font-size:11px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--tx3)">' + hist.length + ' pivot' + (hist.length > 1 ? 's' : '') + ' saved</span>' +
+      '<button onclick="clearHist()" style="font-size:11px;color:var(--tx3);background:none;border:none;cursor:pointer;text-decoration:underline">Clear all</button>' +
+    '</div>' +
+    hist.map(function(h, i) {
+      return '<div class="hi-item">' +
+        '<div class="hi-meta">' + h.time + ' &middot; ' + h.handle + ' &middot; ' + h.gap + '</div>' +
+        '<div class="hi-text" id="h' + i + '">' + h.pivot + '</div>' +
+        '<button class="hi-copy" onclick="cp(\'h' + i + '\',this)">Copy</button>' +
+        '</div>';
+    }).join('');
+}
+
+function clearHist() {
+  if (!confirm('Clear all saved pivots?')) return;
+  hist = [];
+  try { localStorage.removeItem('pivot_hist'); } catch(e) {}
+  renderHist();
 }
 
 function cp(id, btn) {
@@ -437,4 +452,3 @@ function hideE(id) { document.getElementById(id).classList.remove('on'); }
 </script>
 </body>
 </html>
-
