@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pivot Builder</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0b0b0b; --s1: #141414; --s2: #1c1c1c; --br: #272727;
+    --acc: #c9ff47; --acc2: rgba(201,255,71,.07);
+    --tx: #efefef; --mu: #5a5a5a; --red: #ff4f4f; --grn: #c9ff47;
+  }
+  body { background: var(--bg); color: var(--tx); font-family: 'DM Mono', monospace; min-height: 100vh; display: flex; justify-content: center; padding: 40px 16px 80px; }
+  .app { width: 100%; max-width: 720px; }
+  header { margin-bottom: 36px; }
+  .badge { display: inline-block; font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--acc); border: 1px solid var(--acc); padding: 3px 10px; border-radius: 2px; margin-bottom: 12px; }
+  h1 { font-family: 'Syne', sans-serif; font-size: clamp(26px,5vw,38px); font-weight: 800; line-height: 1.08; letter-spacing: -.02em; }
+  h1 em { color: var(--acc); font-style: normal; }
+  .sub { margin-top: 6px; font-size: 11px; color: var(--mu); }
+  .tabs { display: flex; border-bottom: 1px solid var(--br); margin-bottom: 28px; }
+  .tab { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 9px 16px; cursor: pointer; color: var(--mu); border: none; background: none; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+  .tab:hover { color: var(--tx); }
+  .tab.on { color: var(--acc); border-bottom-color: var(--acc); }
+  .pane { display: none; } .pane.on { display: block; }
+  .lbl { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--mu); margin-bottom: 6px; display: block; }
+  .f { margin-bottom: 16px; }
+  input[type=text], textarea {
+    width: 100%; background: var(--s1); border: 1px solid var(--br); color: var(--tx);
+    font-family: 'DM Mono', monospace; font-size: 13px; padding: 10px 13px;
+    border-radius: 5px; outline: none; transition: border-color .15s; resize: vertical;
+  }
+  input[type=text]:focus, textarea:focus { border-color: var(--acc); }
+  textarea { min-height: 70px; }
+  .hr { height: 1px; background: var(--br); margin: 22px 0; }
+  .gg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .gc { background: var(--s1); border: 1px solid var(--br); border-radius: 5px; padding: 11px 13px; cursor: pointer; transition: all .15s; }
+  .gc:hover { border-color: #444; }
+  .gc.on { border-color: var(--acc); background: var(--acc2); }
+  .gc .t { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; color: var(--tx); margin-bottom: 2px; }
+  .gc.on .t { color: var(--acc); }
+  .gc .d { font-size: 10px; color: var(--mu); line-height: 1.4; }
+  .btn { width: 100%; background: var(--acc); color: #000; border: none; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 14px; border-radius: 5px; cursor: pointer; transition: all .15s; margin-top: 4px; }
+  .btn:hover { background: #d8ff6a; }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
+  .sp { display: none; text-align: center; padding: 18px; font-size: 12px; color: var(--mu); }
+  .sp.on { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spn { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--br); border-top-color: var(--acc); border-radius: 50%; animation: spin .6s linear infinite; margin-right: 8px; vertical-align: middle; }
+  .er { display: none; font-size: 12px; color: var(--red); margin-top: 8px; background: rgba(255,79,79,.08); border: 1px solid rgba(255,79,79,.2); padding: 8px 12px; border-radius: 5px; }
+  .er.on { display: block; }
+  .out { display: none; margin-top: 28px; } .out.on { display: block; }
+  .ob { background: var(--s1); border: 1px solid var(--acc); border-radius: 5px; padding: 18px; position: relative; margin-bottom: 12px; }
+  .ot { font-size: 14px; line-height: 1.75; color: var(--tx); white-space: pre-wrap; padding-right: 62px; }
+  .cb { position: absolute; top: 11px; right: 11px; background: transparent; border: 1px solid var(--br); color: var(--mu); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 4px 11px; border-radius: 3px; cursor: pointer; transition: all .15s; }
+  .cb:hover { border-color: var(--acc); color: var(--acc); }
+  .bg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .bc { background: var(--s2); border-radius: 5px; padding: 11px 13px; }
+  .bl { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--acc); margin-bottom: 4px; }
+  .bt { font-size: 11px; color: #aaa; line-height: 1.5; }
+  .fl { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .fg { font-size: 10px; padding: 3px 9px; border-radius: 3px; border: 1px solid; }
+  .ok { border-color: rgba(201,255,71,.25); color: var(--grn); background: rgba(201,255,71,.07); }
+  .bad { border-color: rgba(255,79,79,.25); color: var(--red); background: rgba(255,79,79,.07); }
+  @media (max-width: 500px) { .gg, .bg { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="badge">Outreach OS</div>
+    <h1>Gap Finder<br><em>&amp; Pivot Builder</em></h1>
+    <p class="sub">// paste their reply, pick the gap, get the pivot</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab on" onclick="swTab('build',this)">Build pivot</button>
+    <button class="tab" onclick="swTab('identify',this)">Identify gap</button>
+  </div>
+
+  <div class="pane on" id="p-build">
+    <div class="f"><span class="lbl">Their reply</span><textarea id="reply" placeholder="e.g. 'yeah been posting forex content for about 2 years'"></textarea></div>
+    <div class="f"><span class="lbl">Creator handle / niche</span><input type="text" id="handle" placeholder="e.g. @tradingwithkarl — forex"></div>
+    <div class="hr"></div>
+    <span class="lbl" style="margin-bottom:12px">Pick the gap (one only)</span>
+    <div class="gg">
+      <div class="gc" onclick="sg(this,'calendly_far')"><div class="t">Calendly too far out</div><div class="d">7–14+ days ahead → no-shows</div></div>
+      <div class="gc" onclick="sg(this,'broken_link')"><div class="t">Broken / 404 link</div><div class="d">Bio link or button goes nowhere</div></div>
+      <div class="gc" onclick="sg(this,'no_highticket')"><div class="t">No high-ticket offer</div><div class="gd">Only low-ticket, top buyers stuck</div></div>
+      <div class="gc" onclick="sg(this,'no_qualify')"><div class="t">No qualifying process</div><div class="d">Anyone books, no Typeform filter</div></div>
+      <div class="gc" onclick="sg(this,'no_vsl')"><div class="t">No context video / VSL</div><div class="d">Traffic hits calendar cold</div></div>
+      <div class="gc" onclick="sg(this,'affiliate_only')"><div class="t">Affiliate only</div><div class="d">No owned offer, just promos</div></div>
+      <div class="gc" onclick="sg(this,'no_link_bio')"><div class="t">No link in bio</div><div class="d">Audience has nowhere to go</div></div>
+      <div class="gc" onclick="sg(this,'community_no_funnel')"><div class="t">Community, no funnel</div><div class="d">Skool/Discord with no frontend</div></div>
+      <div class="gc" onclick="sg(this,'slow_setter')"><div class="t">Slow / no setter response</div><div class="d">Leads opt in, hear nothing back</div></div>
+      <div class="gc" onclick="sg(this,'bio_mismatch')"><div class="t">Bio vs content mismatch</div><div class="d">Content pushes X, bio sends to Y</div></div>
+    </div>
+    <div class="f"><span class="lbl">Or describe a custom gap</span><textarea id="customGap" placeholder="e.g. landing page has no testimonials..." style="min-height:52px"></textarea></div>
+    <button class="btn" id="genBtn" onclick="genPivot()">Generate pivot →</button>
+    <div class="sp" id="genSp"><span class="spn"></span>crafting pivot...</div>
+    <div class="er" id="genEr"></div>
+    <div class="out" id="genOut">
+      <div class="hr"></div>
+      <span class="lbl">Your pivot</span>
+      <div class="ob"><button class="cb" onclick="cp('pivotTx',this)">Copy</button><div class="ot" id="pivotTx"></div></div>
+      <div class="bg" id="bdGrid"></div>
+      <span class="lbl">Banned word check</span>
+      <div class="fl" id="flags"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-identify">
+    <div class="f"><span class="lbl">Bio / link tree</span><textarea id="iBio" placeholder="e.g. forex trader, DM to apply, link → calendly"></textarea></div>
+    <div class="f"><span class="lbl">What are they selling?</span><textarea id="iSell" placeholder="e.g. $97 course, free discord, 1:1 at $500/mo"></textarea></div>
+    <div class="f"><span class="lbl">What happens on link click?</span><textarea id="iLink" placeholder="e.g. goes straight to calendly, no VSL, or broken"></textarea></div>
+    <div class="f"><span class="lbl">Anything else noticed?</span><textarea id="iNotes" placeholder="e.g. no Typeform, posts 5x/week but no CTA..."></textarea></div>
+    <button class="btn" id="idBtn" onclick="idGap()">Identify the gap →</button>
+    <div class="sp" id="idSp"><span class="spn"></span>analyzing funnel...</div>
+    <div class="er" id="idEr"></div>
+    <div class="out" id="idOut">
+      <div class="hr"></div>
+      <div class="ob" id="idRes"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var selKey = null;
+var GAPS = {
+  calendly_far: 'Calendly allows bookings 7-14+ days in advance, causing most no-shows',
+  broken_link: 'Bio link or funnel button is broken, leads to a 404 or dead page',
+  no_highticket: 'No high-ticket offer, top buyers have nowhere to go after the low-ticket',
+  no_qualify: 'No qualifying step, anyone can book with zero filter before the call',
+  no_vsl: 'Traffic hits the calendar cold with no VSL or context video first',
+  affiliate_only: 'Affiliate-only setup, promoting others products with no owned offer',
+  no_link_bio: 'No link in bio, content has no destination for the audience',
+  community_no_funnel: 'Has a Skool/Discord community but no frontend funnel to ascend members',
+  slow_setter: 'No follow-up system, leads who opt in do not hear back within minutes',
+  bio_mismatch: 'Content pushes one thing but bio link sends people somewhere different'
+};
+var BANNED = ['leaving money on the table','on your end','quick','scale','clear path','stack on top'];
+
+function swTab(t, el) {
+  document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('on'); });
+  document.querySelectorAll('.pane').forEach(function(x){ x.classList.remove('on'); });
+  el.classList.add('on');
+  document.getElementById('p-'+t).classList.add('on');
+}
+
+function sg(el, key) {
+  document.querySelectorAll('.gc').forEach(function(c){ c.classList.remove('on'); });
+  el.classList.add('on');
+  selKey = key;
+  document.getElementById('customGap').value = '';
+}
+
+async function callAPI(sys, usr) {
+  var r = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ system: sys, user: usr })
+  });
+  if (!r.ok) { var t = await r.text(); throw new Error('Error ' + r.status + ': ' + t); }
+  var d = await r.json();
+  if (d.error) throw new Error(d.error);
+  return d.text;
+}
+
+async function genPivot() {
+  var reply = document.getElementById('reply').value.trim();
+  var handle = document.getElementById('handle').value.trim();
+  var custom = document.getElementById('customGap').value.trim();
+  if (!reply) { showE('genEr','Paste their reply first.'); return; }
+  if (!selKey && !custom) { showE('genEr','Pick a gap or describe a custom one.'); return; }
+  var gap = custom || GAPS[selKey];
+  hideE('genEr'); ld('genBtn','genSp',true);
+  document.getElementById('genOut').classList.remove('on');
+
+  var sys = 'You write Instagram DM pivot messages for a growth operator targeting content creators.\n\nPIVOT = 4 parts:\n1. Opener that flows from their reply\n2. One specific gap callout\n3. Value-add hint (a couple other things noticed)\n4. Loom CTA, video already recorded, ask if you can send it\n\nRULES: all lowercase, no exclamation marks, max 3-4 sentences total, one gap only, video is ALREADY recorded, use commas not dashes between sentences, casual not corporate.\n\nNEVER use: leaving money on the table, on your end, quick, scale, clear path, stack on top, I help creators.\n\nRespond ONLY with raw valid JSON, no markdown, no backticks:\n{"pivot":"full message","part1":"opener","part2":"gap","part3":"value-add","part4":"loom cta"}';
+  var usr = 'Creator: '+(handle||'unknown')+'\nReply: "'+reply+'"\nGap: '+gap;
+
+  try {
+    var raw = await callAPI(sys, usr);
+    var p = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('pivotTx').textContent = p.pivot;
+    var pts = [{l:'Opener',t:p.part1},{l:'Gap callout',t:p.part2},{l:'Value-add',t:p.part3},{l:'Loom CTA',t:p.part4}];
+    document.getElementById('bdGrid').innerHTML = pts.map(function(x){
+      return '<div class="bc"><div class="bl">'+x.l+'</div><div class="bt">'+(x.t||'—')+'</div></div>';
+    }).join('');
+    var low = p.pivot.toLowerCase();
+    document.getElementById('flags').innerHTML = BANNED.map(function(w){
+      var f = low.indexOf(w) > -1;
+      return '<span class="fg '+(f?'bad':'ok')+'">'+(f?'✗ ':'✓ ')+w+'</span>';
+    }).join('');
+    document.getElementById('genOut').classList.add('on');
+  } catch(e) { showE('genEr', e.message); }
+  finally { ld('genBtn','genSp',false); }
+}
+
+async function idGap() {
+  var bio = document.getElementById('iBio').value.trim();
+  var sell = document.getElementById('iSell').value.trim();
+  var link = document.getElementById('iLink').value.trim();
+  var notes = document.getElementById('iNotes').value.trim();
+  if (!bio && !sell && !link) { showE('idEr','Fill in at least one field.'); return; }
+  hideE('idEr'); ld('idBtn','idSp',true);
+  document.getElementById('idOut').classList.remove('on');
+
+  var sys = 'Identify the single most impactful funnel gap for a content creator. Pick ONE only. Respond ONLY with raw valid JSON no markdown no backticks:\n{"gap":"gap name","why":"1-2 sentences why this costs them money","dm_line":"casual lowercase one-liner for a DM pivot"}';
+  var usr = 'Bio: '+(bio||'n/a')+'\nSelling: '+(sell||'n/a')+'\nLink: '+(link||'n/a')+'\nNotes: '+(notes||'n/a');
+
+  try {
+    var raw = await callAPI(sys, usr);
+    var p = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('idRes').innerHTML =
+      '<div style="font-size:15px;font-weight:700;font-family:Syne,sans-serif;color:#c9ff47;margin-bottom:10px">'+p.gap+'</div>'+
+      '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#5a5a5a;margin-bottom:4px">Why this gap</div>'+
+      '<div style="font-size:13px;color:#efefef;margin-bottom:14px;line-height:1.65">'+p.why+'</div>'+
+      '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#5a5a5a;margin-bottom:4px">DM line</div>'+
+      '<div style="font-size:13px;color:#efefef;line-height:1.65">'+p.dm_line+'</div>';
+    document.getElementById('idOut').classList.add('on');
+  } catch(e) { showE('idEr', e.message); }
+  finally { ld('idBtn','idSp',false); }
+}
+
+function cp(id, btn) {
+  navigator.clipboard.writeText(document.getElementById(id).textContent).then(function(){
+    btn.textContent = 'Copied!';
+    setTimeout(function(){ btn.textContent = 'Copy'; }, 2000);
+  });
+}
+
+function ld(b, s, state) {
+  document.getElementById(b).disabled = state;
+  document.getElementById(s).classList.toggle('on', state);
+}
+
+function showE(id, msg) { var e = document.getElementById(id); e.textContent = msg; e.classList.add('on'); }
+function hideE(id) { document.getElementById(id).classList.remove('on'); }
+</script>
+</body>
+</html>
