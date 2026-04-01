@@ -6,8 +6,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { system, user } = req.body;
+  const { system, user, max_tokens } = req.body;
   if (!system || !user) return res.status(400).json({ error: 'Missing fields' });
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured in environment variables' });
+  }
 
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -18,13 +22,18 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 800,
+        model: 'claude-sonnet-4-6',
+        max_tokens: max_tokens || 800,
         system,
         messages: [{ role: 'user', content: user }]
       })
     });
-    if (!r.ok) { const e = await r.text(); return res.status(r.status).json({ error: e }); }
+
+    if (!r.ok) {
+      const e = await r.text();
+      return res.status(r.status).json({ error: e });
+    }
+
     const d = await r.json();
     return res.status(200).json({ text: d.content[0].text });
   } catch (e) {
